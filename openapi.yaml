@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info:
+  title: On-Demand Boda API
+  version: '1.0.0'
+  description: Basic OpenAPI spec for the pilot services
+servers:
+  - url: http://localhost:8000/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    OTPRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          example: '+254712345678'
+      required: [phone]
+    OTPVerify:
+      type: object
+      properties:
+        request_id:
+          type: string
+        code:
+          type: string
+      required: [request_id, code]
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        phone:
+          type: string
+        name:
+          type: string
+    RideRequest:
+      type: object
+      properties:
+        origin:
+          $ref: '#/components/schemas/GeoPoint'
+        destination:
+          $ref: '#/components/schemas/GeoPoint'
+        ride_type:
+          type: string
+          enum: [solo, shared, cargo, bike-taxi]
+      required: [origin, destination, ride_type]
+    GeoPoint:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+        address:
+          type: string
+    Ride:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        price:
+          type: number
+        driver_id:
+          type: string
+    PaymentInit:
+      type: object
+      properties:
+        ride_id:
+          type: string
+        method:
+          type: string
+          example: 'mpesa'
+
+paths:
+  /auth/otp/request:
+    post:
+      summary: Request OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPRequest'
+      responses:
+        '200':
+          description: OTP requested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id:
+                    type: string
+  /auth/otp/verify:
+    post:
+      summary: Verify OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPVerify'
+      responses:
+        '200':
+          description: Verified; returns tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+  /rides:
+    post:
+      summary: Create ride
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+      responses:
+        '201':
+          description: Ride created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+  /rides/{id}:
+    get:
+      summary: Get ride
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ride details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+  /driver/accept:
+    post:
+      summary: Driver accept ride
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ride_id:
+                  type: string
+      responses:
+        '200':
+          description: Accepted
+  /payments/initiate:
+    post:
+      summary: Initiate payment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentInit'
+      responses:
+        '200':
+          description: Payment initiated
+  /admin/stats:
+    get:
+      summary: Admin stats
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Stats object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_rides:
+                    type: integer
+                  revenue:
+                    type: number
