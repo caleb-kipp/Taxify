@@ -1,0 +1,19 @@
+name: CD-Dev
+on:
+  push:
+    branches: [ 'develop' ]
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and push Docker images
+        env:
+          REGISTRY: ghcr.io
+          IMAGE_NAME: ${{ github.repository }}
+        run: |
+          echo "Build images and push to registry (configure GHCR permissions)"
+      - name: Deploy to dev cluster
+        run: |
+          echo "Deploy steps here (kubectl apply -f k8s/overlays/dev)"
